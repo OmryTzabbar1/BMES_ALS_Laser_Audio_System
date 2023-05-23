@@ -1,0 +1,252 @@
+#define DETECT_A  6
+#define DETECT_B  7
+#define DETECT_C  8
+#define DETECT_D  9
+
+
+#include <Arduino.h>
+
+#include "Talkie.h"
+#include "Vocab_US_TI99.h"
+
+
+int time_decaseconds_a = 0;
+int time_decaseconds_b = 0;
+int time_decaseconds_c = 0;
+int time_decaseconds_d = 0;
+int characterCount = 0;
+
+bool addTime_a;
+bool addTime_b;
+bool addTime_c;
+bool addTime_d;
+
+int count = 0;
+
+bool counting = true;
+
+const char* yes = spt_YES;
+const char* no = spt_NO;
+const char* help = spt_HELP;
+const char* what = spt_WHAT;
+
+const char* outputs[7];
+
+Talkie voice;
+
+char words[100] =
+
+  {
+
+  NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+  NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
+
+  };
+
+bool count_Seconds(int detector, char letter, char wordList[100], int time, int characterCount)
+
+{
+  bool addTime = false;
+  if (detector == HIGH)
+  {
+    delay(100);
+    addTime = true;
+  }
+  return addTime;
+
+}
+void setup()
+{
+    Serial.begin(115200);
+#if defined(__AVR_ATmega32U4__) || defined(SERIAL_PORT_USBVIRTUAL) || defined(SERIAL_USB) /*stm32duino*/|| defined(USBCON) /*STM32_stm32*/|| defined(SERIALUSB_PID) || defined(ARDUINO_attiny3217)
+    delay(4000); // To be able to connect Serial monitor after reset or power up and before first print out. Do not wait for an attached Serial Monitor!
+#endif
+    // Just to know which program is running on my Arduino
+    Serial.println(F("START " __FILE__ " from " __DATE__ "\r\nUsing library version " VERSION_TALKIE));
+
+//        voice.doNotUseUseInvertedOutput();
+#if defined(TEENSYDUINO)
+        pinMode(3, OUTPUT);
+        digitalWrite(3, HIGH); //Enable Amplified PROP shield
+    #endif
+
+  Serial.println("Laser Module Test") ;
+  pinMode(DETECT_A, INPUT);
+  pinMode(DETECT_B, INPUT);
+  pinMode(DETECT_C, INPUT);
+  pinMode(DETECT_D, INPUT);
+  pinMode(5, OUTPUT); // This is the Red LED
+  pinMode(10, OUTPUT); // This is the Green LED
+  pinMode(11, OUTPUT); // This is the Yellow LED
+  pinMode(12, OUTPUT); // This is the Red2 LED
+  pinMode(13, OUTPUT); 
+
+
+}
+
+void loop()
+{
+  char A = 'Y';
+  char B = 'N';
+  char C = 'H';
+  char D = '?';
+
+  int detect_A = digitalRead(DETECT_A);
+  int detect_B = digitalRead(DETECT_B);
+  int detect_C = digitalRead(DETECT_C);
+  int detect_D = digitalRead(DETECT_D);
+
+  if (count > 0)
+  {
+    if (counting == true && addTime_a == false && addTime_b == false && addTime_c == false && addTime_d == false)
+    {
+      time_decaseconds_a = 0;
+      time_decaseconds_b = 0;
+      time_decaseconds_c = 0;
+      time_decaseconds_d = 0;
+    }    
+  }
+  addTime_a = count_Seconds(detect_A, A, words, time_decaseconds_a, characterCount);
+  addTime_b = count_Seconds(detect_B, B, words, time_decaseconds_b, characterCount);
+  addTime_c = count_Seconds(detect_C, C, words, time_decaseconds_c, characterCount);
+  addTime_d = count_Seconds(detect_D, D, words, time_decaseconds_d, characterCount);
+
+  if (count >= 0)
+  {
+   digitalWrite(5, HIGH);
+   digitalWrite(10, LOW);
+   digitalWrite(11, LOW);
+   digitalWrite(12, LOW);
+   digitalWrite(13, LOW);
+
+  }
+  if (counting == true)
+  {
+    count ++;
+    if (addTime_a == true)
+    {
+      time_decaseconds_b = 0;
+      time_decaseconds_c = 0;
+      time_decaseconds_d = 0;
+      digitalWrite(5, LOW);
+      digitalWrite(10, HIGH);
+      time_decaseconds_a += 1;
+      if (time_decaseconds_a >= 10)
+      {
+        digitalWrite(5, HIGH);
+        digitalWrite(10, LOW);
+
+        Serial.println(A);
+        words[characterCount] = A;
+        outputs[characterCount] = yes;
+
+        characterCount += 1;
+        time_decaseconds_a = 0;
+        counting = false;
+      }
+    }  
+
+  else if(addTime_b == true)
+  {
+    time_decaseconds_a = 0;
+    time_decaseconds_c = 0;
+    time_decaseconds_d = 0;
+    digitalWrite(5, LOW);
+    digitalWrite(12, HIGH);
+    time_decaseconds_b += 1;
+    if (time_decaseconds_b >= 10)
+    {
+      digitalWrite(5, HIGH);
+      digitalWrite(12, LOW);
+
+      Serial.println(B);
+      words[characterCount] = B;
+      outputs[characterCount] = no;
+
+      characterCount += 1;
+      time_decaseconds_b = 0;
+      counting = false;
+    }
+  }
+  else if(addTime_c == true)
+  {
+    time_decaseconds_a = 0;
+    time_decaseconds_b = 0;
+    time_decaseconds_d = 0;
+    digitalWrite(5, LOW);
+    digitalWrite(13, HIGH);
+    time_decaseconds_c += 1;
+    if (time_decaseconds_c >= 10)
+    {
+      digitalWrite(5, HIGH);
+      digitalWrite(13, LOW);
+
+      Serial.println(C);
+      words[characterCount] = C;
+      outputs[characterCount] = help;
+
+      characterCount += 1;
+      time_decaseconds_c = 0;
+      counting = false;
+    }
+  }
+  else if(addTime_d == true)
+  {
+    time_decaseconds_a = 0;
+    time_decaseconds_b = 0;
+    time_decaseconds_c = 0;
+    digitalWrite(5, LOW);
+    digitalWrite(11, HIGH);
+    time_decaseconds_d += 1;
+    if (time_decaseconds_d >= 10)
+    {
+      digitalWrite(5, HIGH);
+      digitalWrite(11, LOW);
+
+      Serial.println(D);
+      words[characterCount] = D;
+      outputs[characterCount] = what;
+
+      characterCount += 1;
+      time_decaseconds_d = 0;
+      counting = false;
+    }
+  }
+  
+
+  }
+
+  else if (counting == false && addTime_a == false && addTime_b == false && addTime_c == false && addTime_d == false)
+  {
+    counting = true;
+    time_decaseconds_a = 0;
+    time_decaseconds_b = 0;
+    time_decaseconds_c = 0;
+    time_decaseconds_d = 0;    
+    digitalWrite(5, HIGH);
+  }
+
+
+
+
+  if (characterCount >= 4)
+    {
+      Serial.println(words);
+      
+      for (int i = 0; i < characterCount; i ++)
+      {
+        voice.say(outputs[i]);  
+        delay(300);              
+      }
+      characterCount = 0;
+    }
+
+}
